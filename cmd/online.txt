@@ -1,0 +1,12 @@
+教程截至2023年12月17日，请注意，购买正版需要花费89元，没有正版也可以进入校园服，但无法进入hypixel等国际服务器，也就没办法和群友的hyp车队愉快玩耍
+图文教程：
+[我的世界正版如何购买] https://www.bilibili.com/read/cv23191363/
+视频教程：
+[如何购买正版 我的世界Minecraft--籽岷] https://www.bilibili.com/video/BV1ta4y1R7Hy
+购买完成后，修改java档案名称，请注意这里就是你的正版id！！
+接下来就是安装启动器
+这里不建议用官方启动器，推荐下载PCL或HCML等第三方启动器，支持多种登录方式，可以很方便地下载各种mod和光影，并且没有限速，功能又多，版本管理也好用，也能直接导入整合包，所以一般正版玩家都不用官启（
+PCL启动器下载： https://cloud.aoe.top/s/XyfP
+HCML启动器下载： https://hmcl.huangyuhui.net/download/
+[我的世界本地整合包安装教程HMCL和PCL2 -- 黑山大叔]： https://www.bilibili.com/read/cv24334696/
+还有什么不懂的可以在群里问哦
