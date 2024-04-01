@@ -1,0 +1,10 @@
+# 后端
+flask
+
+# langchain
+langchain
+langchain-openai
+chromadb
+tiktoken
+
+mcstatus

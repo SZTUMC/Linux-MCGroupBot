@@ -18,7 +18,7 @@ from FuncPack.getGPTresponseFunc import getGPTresponse
 from FuncPack.checkMCServerFunc import checkMCServer
 from FuncPack.getBiliLiveStatusFunc import getLiveStatus
 
-token = 'XcdSrw_6LAZo'
+token = os.environ["TOKEN"]
 
 GROUP_NAME = "深技大mc群(原夹总后援团)"
 
@@ -53,9 +53,9 @@ app = Flask(__name__)
 def logger_wrapper(func):
     global logger
 
-    def wrapper():
+    def wrapper(*args, **kwargs):
         try:
-            func()
+            func(*args, **kwargs)
         except Exception as e:
             logger.error(e)
 
@@ -137,7 +137,7 @@ def get_recv_msg() -> None:
 @logger_wrapper
 def send_mc_group_msg(content: str, data_type: str = "text"):
     global token
-    url = f"http://localhost:3001/webhook/msg/v2?token={token}"
+    url = f"http://wxBotWebhook:3001/webhook/msg/v2?token={token}"
 
     payload = {
         "to": GROUP_NAME,
