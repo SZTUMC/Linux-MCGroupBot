@@ -22,11 +22,6 @@ token = os.environ["TOKEN"]
 
 GROUP_NAME = "深技大mc群(原夹总后援团)"
 
-# api接口url和key设置
-with open('key.txt', 'r') as f:
-    os.environ["OPENAI_API_KEY"] = f.read()
-os.environ["OPENAI_API_BASE"] = 'https://api.nextapi.fun/openai/v1'
-
 # 加载LLM
 chat = ChatOpenAI(temperature=0)
 
@@ -179,22 +174,25 @@ def process_group_recv_msg(name: str, context: str) -> str:
     if context[0] == '/':
 
         if context == '/mcs':
+            logger.info('发送服务器状态')
             sendmsg = checkMCServer()
 
         elif context == '/live':
+            logger.info('发送直播状态')
             status = getLiveStatus()
             sendmsg += f'深圳技术大学Minecraft社直播间：\n直播状态：{status}\n直播间地址：https://live.bilibili.com/31149017'
 
         # 本地知识库
         elif context[:6] == '/agent':
-            send_mc_group_msg('正在查询与整理中，思考完成前不会有响应')
-            result = qa({"query": context[7:]})
-            localMsg = result['result'] + '\n'
-            for index, source in enumerate(result['source_documents']):
-                localMsg += (f'\n来源{index + 1}:' + source.dict()['metadata']['source'])
+            if len(context) > 7:
+                send_mc_group_msg('正在查询与整理中，思考完成前不会有响应')
+                result = qa({"query": context[7:]})
+                localMsg = result['result'] + '\n'
+                for index, source in enumerate(result['source_documents']):
+                    localMsg += (f'\n来源{index + 1}:' + source.dict()['metadata']['source'])
 
-            context = '/agent'
-            sendmsg = localMsg
+                context = '/agent'
+                sendmsg = localMsg
 
         else:
             # 查询已有的命令
@@ -203,7 +201,7 @@ def process_group_recv_msg(name: str, context: str) -> str:
                     sendmsg = f.read()
 
             except FileNotFoundError:
-                logger.error('未知命令')
+                logger.error(f'未知命令: {context}')
                 sendmsg = '未知命令'
 
     # 请求GPT
