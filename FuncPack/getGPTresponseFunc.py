@@ -1,6 +1,7 @@
 import requests
 import json
 import traceback
+import os
 from typing import List
 
 
@@ -56,7 +57,7 @@ def getGPTresponse(
 
     # 发送请求
     response = requests.request("POST",
-                                url=base_url + "/v1/chat/completions",
+                                url=base_url + "/chat/completions",
                                 headers={
                                     'Accept': 'application/json',
                                     'Authorization': 'Bearer ' + api_key,

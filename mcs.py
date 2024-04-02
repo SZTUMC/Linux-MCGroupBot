@@ -20,6 +20,8 @@ from FuncPack.getBiliLiveStatusFunc import getLiveStatus
 
 token = os.environ["TOKEN"]
 
+OPENAI_API_BASE = os.environ["OPENAI_API_BASE"]
+
 GROUP_NAME = "深技大mc群(原夹总后援团)"
 
 # 加载LLM
@@ -51,10 +53,10 @@ def logger_wrapper(func):
     def wrapper(*args, **kwargs):
         try:
             logger.info(f'{func.__name__} running... args: {args}, kwargs: {kwargs}')
-            func(*args, **kwargs)
+            return func(*args, **kwargs)
         except Exception as e:
             logger.error(f'{func.__name__} failed: {e}')
-
+        
     return wrapper
 
 
@@ -92,7 +94,7 @@ def get_recv_msg() -> None:
             logger.info(f'{name} in room {roomName} say: "{content}"')
             reply = process_group_recv_msg(name, content)
 
-            logger.info(f'content:\n{content}\nreply:\n"{reply}"')
+            logger.info(f'content:\n"{content}"\nreply:\n"{reply}"')
 
             response_data = {
                 "success": True,
@@ -102,9 +104,9 @@ def get_recv_msg() -> None:
                 }
             }
 
-            if isMentioned == "1":
-                logger.info(name + "@me")
-                return response_data
+            # if isMentioned == "1":
+            #     logger.info(name + "@me")
+            return response_data
 
         # 私信部分
         if source_dict['to']:
@@ -198,7 +200,7 @@ def process_group_recv_msg(name: str, context: str) -> str:
             # 查询已有的命令
             try:
                 with open('cmd' + context + '.txt', mode='r', encoding='utf-8') as f:
-                    logger.info("load cmd:" + content)
+                    logger.info("load cmd:" + context)
                     sendmsg = f.read()
                     logger.info("have load msg:\n" + sendmsg)
 
@@ -213,15 +215,16 @@ def process_group_recv_msg(name: str, context: str) -> str:
             send_mc_group_msg('正在思考中，回复完成前不会有响应')
             new_msg = f'玩家{asker}说:' + context[5:] + '\n回复简短，限制在100字以内，用文言文回复'
             history_context = getGPTresponse(
-                base_url=os.environ["OPENAI_API_BASE"],
-                history_context, 
-                new_msg
+                base_url=OPENAI_API_BASE,
+                history_context=history_context, 
+                new_message=new_msg
             )
             answer = history_context[-1]["content"]
             sendmsg += f'@{asker}{context[4]}{answer}'
 
     # 发送查询结果
     if sendmsg:
+        logger.info("sendmsg:\n"+sendmsg)
         if context != '/help':
             sendmsg += help_msg
         else:
@@ -239,7 +242,6 @@ class ScheduledArea:
         self.tick = 0
         self.last_tick = 0
 
-    @logger_wrapper
     def process_scheduled_msg(self):
         global logger
         sendmsg = ''
@@ -257,7 +259,7 @@ class ScheduledArea:
             # 开播检测
             if (min == '00' or min == '30') and sec == '30':
                 logger.info('检测直播状态')
-                status = getLiveStatus()
+                status = getLiveStatus(arg_roomid=31149017)
                 if status == '直播中' and self.last_status != '直播中':
                     sendmsg += '检测到官号开播：\n深圳技术大学Minecraft社直播间\n直播间地址：https://live.bilibili.com/31149017'
                     self.last_status = '直播中'
