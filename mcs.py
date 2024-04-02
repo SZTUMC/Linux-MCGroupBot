@@ -1,5 +1,4 @@
 import os
-import traceback
 import json
 import requests
 import threading
@@ -13,6 +12,7 @@ from langchain.embeddings.openai import OpenAIEmbeddings
 from langchain.chains import RetrievalQA
 from langchain.chat_models import ChatOpenAI
 from langchain.vectorstores import Chroma
+
 from FuncPack.getDailyColdKnowledge import getDailyColdKnowledge
 from FuncPack.getGPTresponseFunc import getGPTresponse
 from FuncPack.checkMCServerFunc import checkMCServer
@@ -55,9 +55,10 @@ def logger_wrapper(func):
 
     def wrapper(*args, **kwargs):
         try:
+            logger.info(f'{func.__name__} running... args: {args}, kwargs: {kwargs}')
             func(*args, **kwargs)
         except Exception as e:
-            logger.error(e)
+            logger.error(f'{func.__name__} failed: {e}')
 
     return wrapper
 
@@ -93,15 +94,18 @@ def get_recv_msg() -> None:
             name = source_dict["from"]["payload"]["name"]
             roomName = source_dict["room"]["payload"]["topic"]
             isMentioned = form.get('isMentioned')
+            logger.info(f'{name} in room {roomName} say: "{content}"')
+            reply = process_group_recv_msg(name, content)
+
+            logger.info(f'reply: "{reply}"')
+
             response_data = {
                 "success": True,
                 "data": {
                     'type': 'text',
-                    'content': process_group_recv_msg(name, content)
+                    'content': reply
                 }
             }
-
-            logger.info(f'{name} in room {roomName} say: "{content}"')
 
             if isMentioned == "1":
                 logger.info(name + "@me")
@@ -123,7 +127,7 @@ def get_recv_msg() -> None:
         return 'error', 400
 
     except Exception as e:
-        traceback.print_exc()
+        logger.error(e)
         # 处理异常情况
         response_data = {
             "success": False,
@@ -136,7 +140,7 @@ def get_recv_msg() -> None:
 # 发送消息
 @logger_wrapper
 def send_mc_group_msg(content: str, data_type: str = "text"):
-    global token
+    global token, logger
     url = f"http://wxBotWebhook:3001/webhook/msg/v2?token={token}"
 
     payload = {
@@ -193,6 +197,7 @@ def process_group_recv_msg(name: str, context: str) -> str:
             sendmsg = localMsg
 
         else:
+            # 查询已有的命令
             try:
                 with open('cmd' + context + '.txt', mode='r', encoding='utf-8') as f:
                     sendmsg = f.read()
@@ -203,12 +208,13 @@ def process_group_recv_msg(name: str, context: str) -> str:
 
     # 请求GPT
     if context[:4] == "@Bot":
-        asker = name
-        send_mc_group_msg('正在思考中，回复完成前不会有响应')
-        new_msg = f'玩家{asker}说:' + context[5:] + '\n回复简短，限制在100字以内，用文言文回复'
-        history_context = getGPTresponse(history_context, new_msg)
-        answer = history_context[-1]["content"]
-        sendmsg += f'@{asker}{context[4]}{answer}'
+        if len(context) > 5:
+            asker = name
+            send_mc_group_msg('正在思考中，回复完成前不会有响应')
+            new_msg = f'玩家{asker}说:' + context[5:] + '\n回复简短，限制在100字以内，用文言文回复'
+            history_context = getGPTresponse(history_context, new_msg)
+            answer = history_context[-1]["content"]
+            sendmsg += f'@{asker}{context[4]}{answer}'
 
     # 发送查询结果
     if sendmsg:
@@ -229,6 +235,7 @@ class ScheduledArea:
 
     @logger_wrapper
     def process_scheduled_msg(self):
+        global logger
         sendmsg = ''
         hour, min, sec = time.strftime('%H %M %S', time.localtime(time.time())).split(' ')
         # print('time:', hour, min, sec, end='\r')
@@ -236,12 +243,14 @@ class ScheduledArea:
         if self.tick - self.last_tick > 50:
             # 早睡助手
             if hour == '00' and min == '00' and sec == '00':
+                logger.info('发送早睡提醒')
                 with open('text/tips.txt', mode='r', encoding='utf-8') as f:
                     sendmsg = f.read()
                 self.last_tick = self.tick
 
             # 开播检测
             if (min == '00' or min == '30') and sec == '30':
+                logger.info('检测直播状态')
                 status = getLiveStatus()
                 if status == '直播中' and self.last_status != '直播中':
                     sendmsg += '检测到官号开播：\n深圳技术大学Minecraft社直播间\n直播间地址：https://live.bilibili.com/31149017'
@@ -254,14 +263,17 @@ class ScheduledArea:
 
             # 每日冷知识
             if hour == '15' and min == '45' and sec == '00':
-                newMsg, filename = getDailyColdKnowledge()
+                logger.info('发送冷知识')
+                newMsg, file_url = getDailyColdKnowledge()
                 newMsg += '\n--转自东南大学Minecraft社B站动态'
                 newMsg += help_msg
                 send_mc_group_msg(newMsg)
-                send_mc_group_msg(newMsg, data_type='fileUrl')
+                send_mc_group_msg(file_url, data_type='fileUrl')
                 self.last_tick = self.tick
                 return
-
+            
+        # 如果有消息，发送消息
+        if sendmsg:
             send_mc_group_msg(sendmsg)
 
     def scheduled_loop(self):
