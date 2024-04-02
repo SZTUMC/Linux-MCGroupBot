@@ -30,5 +30,5 @@ fi;\
     echo \"Starting application with \
     OPENAI_API_KEY=$OPENAI_API_KEY, OPENAI_API_BASE=$OPENAI_API_BASE, TOKEN=$TOKEN\"; \
     python mcs.py; \
-fi"]
+"]
 

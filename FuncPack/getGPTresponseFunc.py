@@ -4,23 +4,6 @@ import traceback
 from typing import List
 
 
-def FindApiKey():
-    api_key = ''
-    try:
-        with open('key.txt', 'r') as f:
-            api_key = f.read()
-    except FileNotFoundError as e:
-        f = open('key.txt', 'w')
-        f.close()
-    finally:
-        traceback.print_exc()
-
-    if not api_key:
-        print('请在key.txt文件中输入正确的中转apikey')
-
-    return api_key
-
-
 def getGPTresponse(
         base_url: str,
         history_context: List,
@@ -34,7 +17,7 @@ def getGPTresponse(
     :return history_context 合并后的历史消息记录
     """
 
-    api_key = FindApiKey()
+    api_key = os.environ["OPENAI_API_KEY"]
 
     # 读取系统提示词
     with open('text/system_prompt.txt', mode='r', encoding='utf-8') as f:

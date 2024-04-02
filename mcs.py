@@ -92,7 +92,7 @@ def get_recv_msg() -> None:
             logger.info(f'{name} in room {roomName} say: "{content}"')
             reply = process_group_recv_msg(name, content)
 
-            logger.info(f'reply: "{reply}"')
+            logger.info(f'content:\n{content}\nreply:\n"{reply}"')
 
             response_data = {
                 "success": True,
@@ -179,7 +179,7 @@ def process_group_recv_msg(name: str, context: str) -> str:
 
         elif context == '/live':
             logger.info('发送直播状态')
-            status = getLiveStatus()
+            status = getLiveStatus(arg_roomid=31149017)
             sendmsg += f'深圳技术大学Minecraft社直播间：\n直播状态：{status}\n直播间地址：https://live.bilibili.com/31149017'
 
         # 本地知识库
@@ -198,7 +198,9 @@ def process_group_recv_msg(name: str, context: str) -> str:
             # 查询已有的命令
             try:
                 with open('cmd' + context + '.txt', mode='r', encoding='utf-8') as f:
+                    logger.info("load cmd:" + content)
                     sendmsg = f.read()
+                    logger.info("have load msg:\n" + sendmsg)
 
             except FileNotFoundError:
                 logger.error(f'未知命令: {context}')
@@ -210,7 +212,11 @@ def process_group_recv_msg(name: str, context: str) -> str:
             asker = name
             send_mc_group_msg('正在思考中，回复完成前不会有响应')
             new_msg = f'玩家{asker}说:' + context[5:] + '\n回复简短，限制在100字以内，用文言文回复'
-            history_context = getGPTresponse(history_context, new_msg)
+            history_context = getGPTresponse(
+                base_url=os.environ["OPENAI_API_BASE"],
+                history_context, 
+                new_msg
+            )
             answer = history_context[-1]["content"]
             sendmsg += f'@{asker}{context[4]}{answer}'
 
@@ -218,6 +224,8 @@ def process_group_recv_msg(name: str, context: str) -> str:
     if sendmsg:
         if context != '/help':
             sendmsg += help_msg
+        else:
+            logger.info("help指令")
 
     return sendmsg
 
@@ -284,5 +292,6 @@ class ScheduledArea:
 if __name__ == "__main__":
     scheduler = ScheduledArea()
     scheduled_loop_thread = threading.Thread(target=scheduler.scheduled_loop, daemon=True)
+    scheduled_loop_thread.start()
     app.run(host='0.0.0.0', port=4994)
 
