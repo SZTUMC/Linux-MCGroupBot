@@ -2,6 +2,7 @@ import os
 import json
 import requests
 import threading
+import pickle
 from flask import Flask, request, jsonify
 
 import time
@@ -40,9 +41,15 @@ qa = RetrievalQA.from_chain_type(
 
 history_context = []
 
-help_msg = "\n\ntips：输入/help获取命令表"
-
 logger = mylog.log_init(path='logs/')
+
+try:
+    with open('historyGPT.data', mode='rb') as f:
+        history_context = pickle.load(f)
+except FileNotFoundError as e:
+    logger.info('GPT history not found, will create new data')
+    
+help_msg = "\n\ntips：输入/help获取命令表"
 
 app = Flask(__name__)
 
@@ -72,7 +79,10 @@ def get_recv_msg() -> None:
         if context_type != 'text':
 
             if context_type != 'file':
-                logger.warning("recv unknown type:" + form.get('type'))
+                if context_type == 'system_event_push_notify':
+                    return 'bot send', 200
+                
+                logger.warning("recv unknown type:" + context_type)
                 return 'failed', 500
 
             file = request.files['content']
@@ -104,8 +114,9 @@ def get_recv_msg() -> None:
                 }
             }
 
-            # if isMentioned == "1":
-            #     logger.info(name + "@me")
+            if isMentioned == "1":
+                logger.info(name + "@me")
+            
             return response_data
 
         # 私信部分
@@ -124,7 +135,7 @@ def get_recv_msg() -> None:
         return 'error', 400
 
     except Exception as e:
-        logger.error(e)
+        logger.error('get_recv_msg error', e)
         # 处理异常情况
         response_data = {
             "success": False,
@@ -149,11 +160,13 @@ def send_mc_group_msg(content: str, data_type: str = "text"):
         }
     }
 
+    payload = json.dumps(payload)
+
     headers = {
         'User-Agent': 'Apifox/1.0.0 (https://apifox.com)',
         'Content-Type': 'application/json',
         'Accept': '*/*',
-        'Host': 'localhost:3001',
+        'Host': 'wxBotWebhook:3001',
         'Connection': 'keep-alive'
     }
 
@@ -247,11 +260,14 @@ class ScheduledArea:
         sendmsg = ''
         hour, min, sec = time.strftime('%H %M %S', time.localtime(time.time())).split(' ')
         # print('time:', hour, min, sec, end='\r')
+        if self.tick % 360 == 0:
+            logger.info(f'scheduled time:{hour} {min} {sec} tick:{self.tick}')
 
         if self.tick - self.last_tick > 50:
             # 早睡助手
             if hour == '00' and min == '00' and sec == '00':
                 logger.info('发送早睡提醒')
+                logger = mylog.log_init()
                 with open('text/tips.txt', mode='r', encoding='utf-8') as f:
                     sendmsg = f.read()
                 self.last_tick = self.tick
@@ -289,6 +305,11 @@ class ScheduledArea:
             self.process_scheduled_msg()
             time.sleep(0.1)
             self.tick += 1
+            if self.tick % 360 == 0:
+                logger.info('scheduled_loop still running')
+
+            if self.tick > 36000 * 24:
+                self.tick = 0
 
 
 if __name__ == "__main__":

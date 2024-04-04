@@ -2,6 +2,7 @@ import requests
 import json
 import traceback
 import os
+import pickle
 from typing import List
 
 
@@ -42,7 +43,7 @@ def getGPTresponse(
 
     # 防止过长超max_token, 超过十个进行裁剪
     if len(history_context) > 10:
-        history_context = history_context[5:]
+        history_context = history_context[4:]
 
     # 组成新消息
     messages = sys_prompt + history_context + new_prompt
@@ -77,5 +78,8 @@ def getGPTresponse(
     # 每次保存结果
     with open(file='text/historyGPT.txt', mode='a', encoding='utf-8') as f:
         f.write(str(history_context) + '\n')
+
+    with open('historyGPT.data', mode='wb') as f:
+        pickle.dump(history_context, f)
 
     return history_context

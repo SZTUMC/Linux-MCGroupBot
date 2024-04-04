@@ -164,3 +164,4 @@ cython_debug/
 /key.txt
 /text/historyGPT.txt
 /mcdb/
+historyGPT.data
