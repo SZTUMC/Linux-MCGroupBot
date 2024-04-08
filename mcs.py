@@ -27,6 +27,8 @@ from FuncPack.getGPTresponseFunc import getGPTresponse
 from FuncPack.checkMCServerFunc import checkMCServer
 from FuncPack.getBiliLiveStatusFunc import getLiveStatus
 
+# todo: 全局参数等待规范化为config文件
+
 token = os.environ["TOKEN"]
 
 OPENAI_API_BASE = os.environ["OPENAI_API_BASE"]
@@ -220,7 +222,7 @@ def process_group_recv_msg(name: str, context: str) -> str:
             status = getLiveStatus(arg_roomid=31149017)
             sendmsg += f'深圳技术大学Minecraft社直播间：\n直播状态：{status}\n直播间地址：https://live.bilibili.com/31149017'
 
-        # 本地知识库
+        # fixme: 实际缺失某些文件导致查不到本地文档，本地知识库
         elif context[:6] == '/agent':
             if len(context) > 7:
                 send_mc_group_msg('正在查询与整理中，思考完成前不会有响应')
@@ -244,7 +246,7 @@ def process_group_recv_msg(name: str, context: str) -> str:
                 logger.error(f'未知命令: {context}')
                 sendmsg = '未知命令'
 
-    # 请求GPT
+    #todo: 提示词优化，记忆优化，请求GPT
     if context[:4] == "@Bot":
         if len(context) > 5:
             asker = name
@@ -269,6 +271,7 @@ def process_group_recv_msg(name: str, context: str) -> str:
     return sendmsg
 
 
+# refact: 这个类太屎山，等待重构优化
 # 定时类消息
 class ScheduledArea:
     def __init__(self):
