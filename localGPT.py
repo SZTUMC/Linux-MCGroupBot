@@ -9,8 +9,6 @@ from langchain_core.documents import Document
 from langchain.chains import RetrievalQA
 
 
-with open('key.txt', 'r') as f:
-    os.environ["OPENAI_API_KEY"] = f.read()
 os.environ["OPENAI_API_BASE"] = 'https://api.nextapi.fun/openai/v1'
 
 # 加载LLM
@@ -55,27 +53,28 @@ def local():
     # 进行问答
     result = qa({"query": "红石电路能干什么？"})
 
-    with open('result.txt', 'w', encoding='utf-8') as f:
-        f.write(result['result'])
+    # with open('result.txt', 'w', encoding='utf-8') as f:
+    #     f.write(result['result'])
 
-    with open('source.txt', 'w', encoding='utf-8') as f:
-        for source in result['source_documents']:
-            f.writelines(source.dict()['metadata']['source'])
+    # with open('source.txt', 'w', encoding='utf-8') as f:
+    #     for source in result['source_documents']:
+    #         f.writelines(source.dict()['metadata']['source'])
 
     print(result['result'])
 
+    print(result['source_documents'])
 
 if __name__ == "__main__":
-    # local()
-    from langchain_community.utilities import SearxSearchWrapper
+    local()
+    # from langchain_community.utilities import SearxSearchWrapper
 
     # 创建一个SearxSearchWrapper实例，指定Searx服务器的主机地址
     # search = SearxSearchWrapper(searx_host="http://172.19.111.179:8888")
-    search = SearxSearchWrapper(searx_host="http://127.0.0.1:8888")
+    # search = SearxSearchWrapper(searx_host="http://127.0.0.1:8888")
 
     # 运行搜索查询，例如查询“法国的首都是什么”
-    result = search.run("法国")
-    print(result)
+    # result = search.run("法国")
+    # print(result)
     # test()
     # a = ''
     # with open('text/historyGPT.txt', mode='r', encoding='gbk') as f:

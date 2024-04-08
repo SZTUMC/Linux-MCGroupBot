@@ -3,18 +3,26 @@ import json
 import requests
 import threading
 import pickle
+import time
+import traceback
+
+from io import StringIO
 from flask import Flask, request, jsonify
 
-import time
-
-from utils import mylog
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
 
 from langchain.embeddings.openai import OpenAIEmbeddings
 from langchain.chains import RetrievalQA
 from langchain.chat_models import ChatOpenAI
 from langchain.vectorstores import Chroma
 
-from FuncPack.getDailyColdKnowledge import getDailyColdKnowledge
+from utils import mylog
+
 from FuncPack.getGPTresponseFunc import getGPTresponse
 from FuncPack.checkMCServerFunc import checkMCServer
 from FuncPack.getBiliLiveStatusFunc import getLiveStatus
@@ -34,6 +42,17 @@ embeddings = OpenAIEmbeddings()
 # 加载知识库
 docsearch = Chroma(embedding_function=embeddings, persist_directory='mcdb')
 
+chrome_options = Options()
+chrome_options.add_argument("--mute-audio") 
+chrome_options.add_argument('--no-sandbox')
+chrome_options.add_argument('--disable-dev-shm-usage')
+chrome_options.add_argument('--remote-debugging-port=9222')
+chrome_options.add_argument('--single-process')
+chrome_options.add_argument("--headless")
+chrome_options.add_argument("--disable-gpu")
+service = Service(executable_path='./chromedriver-linux64/chromedriver')
+browser = webdriver.Chrome(options=chrome_options, service=service)
+
 # 创建问答对象
 qa = RetrievalQA.from_chain_type(
     llm=chat, chain_type="stuff", retriever=docsearch.as_retriever(), return_source_documents=True
@@ -52,6 +71,10 @@ except FileNotFoundError as e:
 help_msg = "\n\ntips：输入/help获取命令表"
 
 app = Flask(__name__)
+
+traceback_msg = ''
+
+last_traceback_msg = 'none'
 
 
 def logger_wrapper(func):
@@ -254,9 +277,10 @@ class ScheduledArea:
         # 延时刻，防止短时间高频触发
         self.tick = 0
         self.last_tick = 0
+        self.count = 0
 
     def process_scheduled_msg(self):
-        global logger
+        global logger, last_traceback_msg, traceback_msg
         sendmsg = ''
         hour, min, sec = time.strftime('%H %M %S', time.localtime(time.time())).split(' ')
         # print('time:', hour, min, sec, end='\r')
@@ -267,7 +291,7 @@ class ScheduledArea:
             # 早睡助手
             if hour == '00' and min == '00' and sec == '00':
                 logger.info('发送早睡提醒')
-                logger = mylog.log_init()
+                logger = mylog.log_init(path='logs/')
                 with open('text/tips.txt', mode='r', encoding='utf-8') as f:
                     sendmsg = f.read()
                 self.last_tick = self.tick
@@ -280,29 +304,79 @@ class ScheduledArea:
                     sendmsg += '检测到官号开播：\n深圳技术大学Minecraft社直播间\n直播间地址：https://live.bilibili.com/31149017'
                     self.last_status = '直播中'
 
-                if status == '未开播' and self.last_status == '直播中':
-                    self.last_status == '未开播'
+                if status == '未开播':
+                    logger.info('未在直播')
+                    if self.last_status != '直播中':
+                        self.last_status == '未开播'
 
                 self.last_tick = self.tick
 
             # 每日冷知识
-            if hour == '15' and min == '45' and sec == '00':
-                logger.info('发送冷知识')
-                newMsg, file_url = getDailyColdKnowledge()
-                newMsg += '\n--转自东南大学Minecraft社B站动态'
-                newMsg += help_msg
-                send_mc_group_msg(newMsg)
-                send_mc_group_msg(file_url, data_type='fileUrl')
+            if hour == '12' and min == '00' and sec == '00':
+
                 self.last_tick = self.tick
+                logger.info('发送冷知识')
+                
+                def selenium_get():
+                    self.count += 1
+                    browser.get("https://space.bilibili.com/1377901474/dynamic")
+                    time.sleep(3)
+                    logger.info(f'browser.get:{self.count}')
+                    try:
+                        element = WebDriverWait(browser, 10).until(
+                            EC.presence_of_element_located((By.XPATH, '//*[@id="page-dynamic"]/div[1]/div/div[1]/div[2]/div/div/div[3]/div/div/div/div/div[1]/div/div/span[2]'))
+                        )
+
+                        logger.info(f"{self.count}:element.text:{element.text}")
+                        newMsg = element.text
+                        newMsg += '\n--转自东南大学Minecraft社B站动态'
+                        newMsg += help_msg
+                        send_mc_group_msg(newMsg)
+
+                        img_element = WebDriverWait(browser, 10).until(
+                            EC.presence_of_element_located((By.XPATH, '//*[@id="page-dynamic"]/div[1]/div/div[1]/div[2]/div/div/div[3]/div/div/div/div/div[2]/div/div[1]/div/div/picture/img'))
+                        )
+
+                        file_url = img_element.get_attribute("src")
+                        file_url = file_url[:file_url.rfind('@')]
+
+                        logger.info(f"{self.count}:file_url:{file_url}")
+
+                        send_mc_group_msg(file_url, data_type='fileUrl')
+                        
+                    except:
+                        f = StringIO()
+                        traceback.print_exc(file=f)
+                        traceback_msg = f.getvalue()
+                        if last_traceback_msg != traceback_msg:
+                            logger.error(traceback_msg)
+                        last_traceback_msg = traceback_msg
+
+                        selenium_get()
+
+                selenium_get()
+
                 return
             
         # 如果有消息，发送消息
         if sendmsg:
             send_mc_group_msg(sendmsg)
 
+
     def scheduled_loop(self):
+        global logger, last_traceback_msg, traceback_msg
         while True:
-            self.process_scheduled_msg()
+            try:
+                self.process_scheduled_msg()
+            except:
+                f = StringIO()
+                traceback.print_exc(file=f)
+                traceback_msg = f.getvalue()
+                if last_traceback_msg != traceback_msg:
+                    logger.error(traceback_msg)
+                last_traceback_msg = traceback_msg
+                self.last_tick = self.tick
+            
             time.sleep(0.1)
             self.tick += 1
             if self.tick % 360 == 0:
