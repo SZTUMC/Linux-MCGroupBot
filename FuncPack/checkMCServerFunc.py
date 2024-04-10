@@ -4,6 +4,7 @@ from mcstatus import JavaServer
 
 # 参数
 servers = {
+    "sztumc.cn": 25565,
     "sztumc.cn": 25567,
     "sztumc.top": 25566,
 }

@@ -288,15 +288,21 @@ class ScheduledArea:
         hour, min, sec = time.strftime('%H %M %S', time.localtime(time.time())).split(' ')
         # print('time:', hour, min, sec, end='\r')
         if self.tick % 360 == 0:
-            logger.info(f'scheduled time:{hour} {min} {sec} tick:{self.tick}')
+            logger.info(f'scheduled time:{hour} {min} {sec} tick:{self.tick} last_tick:{self.last_tick}')
 
         if self.tick - self.last_tick > 50:
             # 早睡助手
             if hour == '00' and min == '00' and sec == '00':
                 logger.info('发送早睡提醒')
+
+                # 新一天重置logger，生成新的log文件
+                for handler in logger.handlers.copy():
+                    logger.removeHandler(handler)
                 logger = mylog.log_init(path='logs/')
+
                 with open('text/tips.txt', mode='r', encoding='utf-8') as f:
                     sendmsg = f.read()
+                self.tick = 0
                 self.last_tick = self.tick
 
             # 开播检测
@@ -315,12 +321,13 @@ class ScheduledArea:
                 self.last_tick = self.tick
 
             # 每日冷知识
-            if hour == '12' and min == '00' and sec == '00':
+            if hour == '15' and min == '50' and sec == '00':
 
                 self.last_tick = self.tick
                 logger.info('发送冷知识')
                 
                 def selenium_get():
+                    global last_traceback_msg, traceback_msg
                     self.count += 1
                     browser.get("https://space.bilibili.com/1377901474/dynamic")
                     time.sleep(3)
@@ -384,9 +391,6 @@ class ScheduledArea:
             self.tick += 1
             if self.tick % 360 == 0:
                 logger.info('scheduled_loop still running')
-
-            if self.tick > 36000 * 24:
-                self.tick = 0
 
 
 if __name__ == "__main__":
