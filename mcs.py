@@ -5,9 +5,10 @@ import threading
 import pickle
 import time
 import traceback
+import datetime
 
 from io import StringIO
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -26,6 +27,7 @@ from utils import mylog
 from FuncPack.getGPTresponseFunc import getGPTresponse
 from FuncPack.checkMCServerFunc import checkMCServer
 from FuncPack.getBiliLiveStatusFunc import getLiveStatus
+from FuncPack.getHypPlayerInfo import get_hyp_player_info
 
 # todo: 全局参数等待规范化为config文件
 
@@ -34,6 +36,7 @@ token = os.environ["TOKEN"]
 OPENAI_API_BASE = os.environ["OPENAI_API_BASE"]
 
 GROUP_NAME = "深技大mc群(原夹总后援团)"
+TEST_PERSON = "水滴火熵"
 
 # 加载LLM
 chat = ChatOpenAI(temperature=0)
@@ -42,7 +45,7 @@ chat = ChatOpenAI(temperature=0)
 embeddings = OpenAIEmbeddings()
 
 # 加载知识库
-docsearch = Chroma(embedding_function=embeddings, persist_directory='mcdb')
+docsearch = Chroma(embedding_function=embeddings, persist_directory='LLM_data/mcdb')
 
 chrome_options = Options()
 chrome_options.add_argument("--mute-audio") 
@@ -199,6 +202,41 @@ def send_mc_group_msg(content: str, data_type: str = "text"):
     logger.info(response.text)
 
 
+# 发送给自己消息
+@logger_wrapper
+def send_test_msg(content: str, data_type: str = "text"):
+    global token, logger
+    url = f"http://wxBotWebhook:3001/webhook/msg/v2?token={token}"
+
+    payload = {
+        "to": TEST_PERSON,
+        "isRoom": False,
+        "data": {
+            "type": data_type,
+            "content": content
+        }
+    }
+
+    payload = json.dumps(payload)
+
+    headers = {
+        'User-Agent': 'Apifox/1.0.0 (https://apifox.com)',
+        'Content-Type': 'application/json',
+        'Accept': '*/*',
+        'Host': 'wxBotWebhook:3001',
+        'Connection': 'keep-alive'
+    }
+
+    response = requests.request("POST", url, headers=headers, data=payload)
+    logger.info(response.text)
+
+
+# 发送文件需处理成http url
+@app.route('/<filename>')
+def download(filename):
+    return send_from_directory('weekdays_img', filename, as_attachment=True)
+
+
 # 处理群聊接收的消息，生成回复
 @logger_wrapper
 def process_group_recv_msg(name: str, context: str) -> str:
@@ -215,12 +253,25 @@ def process_group_recv_msg(name: str, context: str) -> str:
 
         if context == '/mcs':
             logger.info('发送服务器状态')
-            sendmsg = checkMCServer()
+            sendmsg = checkMCServer(logger=logger)
 
         elif context == '/live':
             logger.info('发送直播状态')
             status = getLiveStatus(arg_roomid=31149017)
             sendmsg += f'深圳技术大学Minecraft社直播间：\n直播状态：{status}\n直播间地址：https://live.bilibili.com/31149017'
+
+        elif context[:5] == '/qhyp':
+            if len(context) > 6:
+                result = get_hyp_player_info(context[6:])
+                if(result):
+                    sendmsg += f"玩家id：{context[6:]}"
+                    sendmsg += ("\n\n大厅信息：\n大厅等级："+result[0][0]+"\n在线状态："+result[0][1]+"\n上次登录时间："+result[0][2])
+                    sendmsg += ("\n\n起床战争统计：\n起床等级："+result[1][0]+"\n击杀死亡比："+result[1][1]+"\n胜负比："+result[1][2]+"\n床破坏数："+result[1][3])
+                    sendmsg += "\n\n————感谢WGtian的技术支持"
+                else:
+                    sendmsg = "查询失败，请重新查询或检查玩家id是否拼写正确"
+            else:
+                sendmsg = "查询失败，请重新查询或检查玩家id是否拼写正确"
 
         # fixme: 实际缺失某些文件导致查不到本地文档，本地知识库
         elif context[:6] == '/agent':
@@ -251,7 +302,7 @@ def process_group_recv_msg(name: str, context: str) -> str:
         if len(context) > 5:
             asker = name
             send_mc_group_msg('正在思考中，回复完成前不会有响应')
-            new_msg = f'玩家{asker}说:' + context[5:] + '\n回复简短，限制在100字以内，用文言文回复'
+            new_msg = f'玩家{asker}说:' + context[5:] + '\n回复简短，限制在100字以内'
             history_context = getGPTresponse(
                 base_url=OPENAI_API_BASE,
                 history_context=history_context, 
@@ -319,6 +370,27 @@ class ScheduledArea:
                         self.last_status == '未开播'
 
                 self.last_tick = self.tick
+
+            # 服务器轮询
+            if min == '10' and sec == '00':
+                #  if int(hour) % 4 == 0:
+                #     with open('text/update.txt', mode='r', encoding='utf-8') as f:
+                #         update_context = f.read()
+                #     send_mc_group_msg(update_context)
+                 logger.info('轮询服务器状态')
+                 sendmsg = checkMCServer(logger=logger)
+                 self.last_tick = self.tick
+
+            # 工作日
+            if hour == '09' and min == '00' and sec == '00':
+                weekday_index = datetime.datetime.now().weekday()
+                if weekday_index in [i for i in range(5)]:
+                    file_url = f"http://botv2:4994/{weekday_index + 1}.jpg"
+                    logger.info(f"{self.count}:file_url:{file_url}")
+                    send_mc_group_msg(file_url, data_type='fileUrl')
+                    # send_test_msg(file_url, data_type='fileUrl')
+                    self.last_tick = self.tick
+                    
 
             # 每日冷知识
             if hour == '15' and min == '50' and sec == '00':
@@ -397,5 +469,6 @@ if __name__ == "__main__":
     scheduler = ScheduledArea()
     scheduled_loop_thread = threading.Thread(target=scheduler.scheduled_loop, daemon=True)
     scheduled_loop_thread.start()
+    send_test_msg("Bot已重启")
     app.run(host='0.0.0.0', port=4994)
 

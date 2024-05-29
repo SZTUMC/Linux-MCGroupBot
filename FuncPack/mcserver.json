@@ -1,0 +1,26 @@
+[
+    {
+        "motd": "SZTU build and guess Game", 
+        "public_url": "sztumc.cn",
+        "port": 25571,
+        "create_time": "2024-04-14"
+    },
+    {
+        "motd": "A TerraFirma: Rebirth Official Server Pack", 
+        "public_url": "sztumc.cn",
+        "port": 25572,
+        "create_time": "2024-04-30"
+    },
+    {
+        "motd": "A Utopia Minecraft Server", 
+        "public_url": "sztumc.cn",
+        "port": 25566,
+        "create_time": "2024-03-07"
+    },
+    {
+        "motd": "SZU x SZTU x SCAU - smp", 
+        "public_url": "mc.szucraft.cn",
+        "port": 4007,
+        "create_time": "2024-05-24"
+    }
+]

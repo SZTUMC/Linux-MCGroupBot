@@ -165,4 +165,8 @@ cython_debug/
 /text/historyGPT.txt
 /mcdb/
 historyGPT.data
+server_statistics.data
 /chromedriver-linux64
+/LLM_data
+/weekdays_img
+/logs

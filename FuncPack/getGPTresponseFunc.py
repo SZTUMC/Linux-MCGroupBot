@@ -22,7 +22,7 @@ def getGPTresponse(
     api_key = os.environ["OPENAI_API_KEY"]
 
     # 读取系统提示词
-    with open('text/system_prompt.txt', mode='r', encoding='utf-8') as f:
+    with open('LLM_data/system_prompt.txt', mode='r', encoding='utf-8') as f:
         sys_context = f.read()
 
     # 系统提示词
@@ -76,10 +76,10 @@ def getGPTresponse(
     history_context = messages + [ans]
 
     # 每次保存结果
-    with open(file='text/historyGPT.txt', mode='a', encoding='utf-8') as f:
+    with open(file='LLM_data/historyGPT.txt', mode='a', encoding='utf-8') as f:
         f.write(str(history_context) + '\n')
 
-    with open('historyGPT.data', mode='wb') as f:
+    with open('LLM_data/historyGPT.data', mode='wb') as f:
         pickle.dump(history_context, f)
 
     return history_context

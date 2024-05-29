@@ -8,3 +8,10 @@ chromadb
 tiktoken
 
 mcstatus
+
+# 爬虫
+cloudscraper
+bs4
+
+# 工具
+pytz

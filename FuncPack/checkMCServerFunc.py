@@ -1,89 +1,96 @@
 import socket
 import traceback
+import pickle
+import json
+import logging
 from mcstatus import JavaServer
+from FuncPack.severListPing import generate_server
+
 
 # 参数
-servers = {
-    "sztumc.cn": 25565,
-    "sztumc.cn": 25567,
-    "sztumc.top": 25566,
-}
+# servers = [
+#     ("SZTU build and guess Game", "sztumc.cn", 25571),
+#     ("A TerraFirma: Rebirth Official Server Pack", "sztumc.cn", 25572)
+# ]
+with open('FuncPack/mcserver.json', 'r', encoding='utf-8') as f:
+    servers : dict = json.load(f)
+
 private_ip = "10.108.0.209"
 
-
-def search_minecraft_server(host, port):
-    try:
-        # 初始化变量
-        status, protocol, version, title, numplayers, maxplayers = \
-            "未知状态", "\000", "\000", "\000", "\000", "\000"
-
-        # 向服务器发送请求
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.connect((host, port))
-        s.sendall(b'\xFE\x01')
-
-        # 把接受到的数据中00 00 之间的数据进行隔段操作以方便对数据操作
-        data = s.recv(1024).split(b'\x00\x00')
-
-        # 结束请求
-        s.close()
-
-        # 检查data是否为空数据,可以使用print(data)查看数据结构
-        if len(data) >= 3:
-            packet_id = data[0][0]
-            if packet_id == 255:
-                status = "在线"
-                protocol = data[1].decode('utf-8', 'ignore').replace("\x00", "")
-                version = data[2].decode('utf-8', 'ignore').replace("\x00", "")
-                title = data[3].decode('utf-8', 'ignore').replace("\x00", "")
-                numplayers = data[4].decode('utf-8', 'ignore').replace("\x00", "")
-                maxplayers = data[5].decode('utf-8', 'ignore').replace("\x00", "")
-            else:
-                status = "未知状态"
-        else:
-            status = "未知状态"
-
-        return status, protocol, version, title, numplayers, maxplayers
-
-    except Exception as e:
-        print("Error:", e)
-        return "离线", "\000", "\000", "\000", "\000", "\000"
-
-
-def checkMCServer() -> str:
+def checkMCServer(logger: logging.Logger) -> str:
     """
     获取服务器状态
 
     :return sendmsg获取的结果格式化文本
     """
-    sendmsg = '检测到服务器：'
-    for host, port in servers.items():
-        server = JavaServer.lookup(host)
+    sendmsg = '''
+幽匿感测体服务器小助手：
+
+检测到在线服务器：'''
+    sendmsg_behind = '离线服务器:'
+    have_offline_server = False
+
+    for server_json in servers:
+        url = server_json['public_url'] + ":" + str(server_json['port'])
+        create_time = server_json['create_time']
+
+        server = JavaServer.lookup(url)
 
         sendmsg += '\n'
 
-        status, protocol, version, title, numplayers, maxplayers \
-            = search_minecraft_server(host, port)
+        try:
+            title = server.query().motd.raw
+            version = server.query().software.version
+            names = server.query().players.names
+            sendmsg += f'服务器标题：{title}'
+            sendmsg += f'\n开档日期：{create_time}'
+            if server_json['public_url'].endswith("sztumc.cn"):
+                sendmsg += f"\n- 内网(校园网): {private_ip}:{server_json['port']}"
+            sendmsg += f'\n- 公网地址：{url}'
+            sendmsg += f'\n- 版本：{version}'
+            sendmsg += f'\n- 在线玩家人数：{len(names)}'
+            if len(names) > 0:
+                sendmsg += '\n- 玩家列表：'
+                for name in names:
+                    sendmsg += f'\n    {name}'
 
-        if status == "在线":
-            sendmsg += f"""{title}:
-服务器ip(外网): {host}
-内网(校园网): {private_ip}:{port}
-服务器状态:{status}
-游戏版本:{version}
-当前玩家数:{numplayers}"""
+            sendmsg += '\n'
+
+        except TimeoutError as timeout_error:
             try:
-                names = server.query().players.names
-                if len(names) > 0:
-                    sendmsg += '\n玩家列表：'
-                    for name in names:
-                        sendmsg += f'\n{name}'
-                sendmsg += '\n'
+                sendmsg += generate_server(
+                    logger=logger, server_config=server_json
+                )
             except:
-                traceback.print_exc()
-        else:
-            sendmsg += f"""离线服务器:
-服务器ip(外网): {host}
-内网(校园网): {private_ip}:{port}
+                have_offline_server = True
+                sendmsg_behind += f"""
+- 上次服务器标题：{server_json['motd']}
+- 公网地址: {url}
 """
+                if server_json['public_url'].endswith("sztumc.cn"):
+                    sendmsg_behind += f"\n- 内网(校园网): {private_ip}:{server_json['port']}"
+        except:
+            
+            traceback.print_exc()
+
+    if have_offline_server:
+        sendmsg += sendmsg_behind
+
+    sendmsg += """
+重要提示：
+1.有学校内网优先连内网ip，是公网速率的20倍（200M，1ms以内延时），在外请连公网ip
+2.高速跑图吃带宽，公网延迟暴增多是因为有人鞘翅或航海跑图，所以跑图尽量一起
+3.经数据统计周目包平均存活时间为两周，看到在线人数为0的多数是过了这个期限，反之则是新出的
+4.有标注ipv6支持的可以开手机流量然后热点连接，三大运营商基本支持ipv6，校园网暂不公开ipv6
+5.如无特殊情况，节假日出新周目，可以提前推荐新包，以便安排排期
+---- 更新于 2024年5月29日 by Mick4994"""
+
     return sendmsg[:-1]
+
+# def statistics_data_record():
+#     try:
+#         with open('server_statistics.data', mode='rb') as f:
+#             history_context = pickle.load(f)
+#     except FileNotFoundError as e:
+#         logger.info('GPT history not found, will create new data')
+#     with open(file='server_statistics.data', mode='wb') as f:
