@@ -27,7 +27,7 @@ def checkMCServer(logger: logging.Logger) -> str:
 幽匿感测体服务器小助手：
 
 检测到在线服务器：'''
-    sendmsg_behind = '离线服务器:'
+    sendmsg_behind = '\n离线服务器:'
     have_offline_server = False
 
     for server_json in servers:
@@ -43,7 +43,7 @@ def checkMCServer(logger: logging.Logger) -> str:
             version = server.query().software.version
             names = server.query().players.names
             sendmsg += f'服务器标题：{title}'
-            sendmsg += f'\n开档日期：{create_time}'
+            sendmsg += f'\n- 开档日期：{create_time}'
             if server_json['public_url'].endswith("sztumc.cn"):
                 sendmsg += f"\n- 内网(校园网): {private_ip}:{server_json['port']}"
             sendmsg += f'\n- 公网地址：{url}'
@@ -65,8 +65,7 @@ def checkMCServer(logger: logging.Logger) -> str:
                 have_offline_server = True
                 sendmsg_behind += f"""
 - 上次服务器标题：{server_json['motd']}
-- 公网地址: {url}
-"""
+- 公网地址: {url}"""
                 if server_json['public_url'].endswith("sztumc.cn"):
                     sendmsg_behind += f"\n- 内网(校园网): {private_ip}:{server_json['port']}"
         except:

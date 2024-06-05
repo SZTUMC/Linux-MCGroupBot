@@ -372,7 +372,7 @@ class ScheduledArea:
                 self.last_tick = self.tick
 
             # 服务器轮询
-            if min == '10' and sec == '00':
+            if min == '10' and sec == '00' and int(hour) % 4 == 0:
                 #  if int(hour) % 4 == 0:
                 #     with open('text/update.txt', mode='r', encoding='utf-8') as f:
                 #         update_context = f.read()

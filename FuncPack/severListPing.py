@@ -97,9 +97,9 @@ def generate_server(logger: logging.Logger, server_config, trans=0):
                 players[i] = "假人"
 
     json_data = f"服务器标题: {server_name}\n- \
-        开档日期：{create_time}\n- \
-        公网地址：{host}:{port}\n- \
-        版本：{data['version']['name']}\n" \
+开档日期：{create_time}\n- \
+公网地址：{host}:{port}\n- \
+版本：{data['version']['name']}\n" \
             + "- 在线人数: {}\n".format(players_online)
     
     if players != "无":
