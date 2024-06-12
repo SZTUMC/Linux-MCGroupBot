@@ -1,9 +1,16 @@
 import logging
 import time
+import traceback
+from io import StringIO
 
 class LogUtil:
     
     def __init__(self, path, log_level = logging.DEBUG) -> None: 
+        self._init_logger(path, log_level)
+        self.last_traceback_msg = ''
+
+
+    def _init_logger(self, path, log_level):
         self.logger = logging.getLogger()
         self.logger.setLevel(logging.INFO)  # Log等级总开关
         rq = time.strftime('%Y-%m-%d %H-%M', time.localtime(time.time()))
@@ -22,7 +29,7 @@ class LogUtil:
 
 
     def rebuild(self):
-        self.__init__()
+        self._init_logger()
 
 
     def getLogger(self):
@@ -45,7 +52,13 @@ class LogUtil:
                 self.logger.info(f'{func.__name__} running... args: {args}, kwargs: {kwargs}')
                 return func(*args, **kwargs)
             except Exception as e:
-                self.logger.error(f'{func.__name__} failed: {e}')
+                f = StringIO()
+                traceback.print_exc(file=f)
+                traceback_msg = f.getvalue()
+                if self.last_traceback_msg != traceback_msg:
+                    self.logger.error(traceback_msg)
+                self.last_traceback_msg = traceback_msg
+                self.logger.error(f'{func.__name__} failed: {e}\n detail traceback_msg:\n{traceback_msg}')
             
         return wrapper
 

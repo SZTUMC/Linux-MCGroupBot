@@ -41,7 +41,7 @@ class ScheduledArea:
                 global_logger.info('发送早睡提醒')
 
                 # 新一天重置logger，生成新的log文件
-                for handler in logger.handlers.copy():
+                for handler in global_logger.handlers.copy():
                     global_logger.removeHandler(handler)
                 global_logger.rebuild()
 
@@ -71,16 +71,15 @@ class ScheduledArea:
                 #     with open('text/update.txt', mode='r', encoding='utf-8') as f:
                 #         update_context = f.read()
                 #     send_mc_group_msg(update_context)
-                 global_logger.info('轮询服务器状态')
-                 sendmsg = checkMCServer(logger=global_logger)
-                 self.last_tick = self.tick
+                global_logger.info('轮询服务器状态')
+                sendmsg = checkMCServer(logger=global_logger)
+                self.last_tick = self.tick
 
             # 工作日
             if hour == '09' and min == '00' and sec == '00':
                 weekday_index = datetime.datetime.now().weekday()
                 if weekday_index in [i for i in range(5)]:
-                    file_url = f"http://botv2:4994/{weekday_index + 1}.jpg"
-                    global_logger.info(f"{self.count}:file_url:{file_url}")
+                    file_url = f"http://botv3:4994/{weekday_index + 1}.jpg"
                     send_mc_group_msg(file_url, data_type='fileUrl')
                     # send_test_msg(file_url, data_type='fileUrl')
                     self.last_tick = self.tick
@@ -93,7 +92,6 @@ class ScheduledArea:
                 global_logger.info('发送冷知识')
                 
                 def selenium_get():
-                    global last_traceback_msg, traceback_msg
                     self.count += 1
                     browser.get("https://space.bilibili.com/1377901474/dynamic")
                     time.sleep(3)
@@ -103,7 +101,6 @@ class ScheduledArea:
                             EC.presence_of_element_located((By.XPATH, '//*[@id="page-dynamic"]/div[1]/div/div[1]/div[2]/div/div/div[3]/div/div/div/div/div[1]/div/div/span[2]'))
                         )
 
-                        global_logger.info(f"{self.count}:element.text:{element.text}")
                         newMsg = element.text
                         newMsg += '\n--转自东南大学Minecraft社B站动态'
                         newMsg += help_msg
@@ -116,18 +113,11 @@ class ScheduledArea:
                         file_url = img_element.get_attribute("src")
                         file_url = file_url[:file_url.rfind('@')]
 
-                        global_logger.info(f"{self.count}:file_url:{file_url}")
-
                         send_mc_group_msg(file_url, data_type='fileUrl')
                         
                     except:
-                        f = StringIO()
-                        traceback.print_exc(file=f)
-                        traceback_msg = f.getvalue()
-                        if last_traceback_msg != traceback_msg:
-                            global_logger.error(traceback_msg)
-                        last_traceback_msg = traceback_msg
 
+                        # 反复重试
                         selenium_get()
 
                 selenium_get()
@@ -141,17 +131,8 @@ class ScheduledArea:
 
     def scheduled_loop(self):
         while True:
-            try:
-                self.process_scheduled_msg()
-            except:
-                f = StringIO()
-                traceback.print_exc(file=f)
-                traceback_msg = f.getvalue()
-                if last_traceback_msg != traceback_msg:
-                    global_logger.error(traceback_msg)
-                last_traceback_msg = traceback_msg
-                self.last_tick = self.tick
-            
+            self.process_scheduled_msg()
+
             time.sleep(0.1)
             self.tick += 1
             if self.tick % 360 == 0:
