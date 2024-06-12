@@ -3,6 +3,7 @@ flask
 
 # langchain
 langchain
+langchain-community
 langchain-openai
 chromadb
 tiktoken
@@ -11,6 +12,7 @@ mcstatus
 
 # 爬虫
 cloudscraper
+selenium
 bs4
 
 # 工具

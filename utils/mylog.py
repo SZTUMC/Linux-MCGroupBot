@@ -50,5 +50,7 @@ class LogUtil:
         return wrapper
 
 # workspace: /usr/src/myapp/Linux-MCGroupBot/
-global_logger = LogUtil(path='logs/')
+global_logUtil = LogUtil(path='logs/')
+global_logger = global_logUtil.getLogger()
+
 

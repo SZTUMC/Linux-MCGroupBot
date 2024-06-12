@@ -1,6 +1,6 @@
 import json
 import requests
-from utils.mylog import global_logger
+from utils.mylog import global_logger, global_logUtil
 from config import *
 from FuncPack.getGPTresponseFunc import getGPTresponse
 from FuncPack.checkMCServerFunc import checkMCServer
@@ -24,12 +24,12 @@ def get_recv_msg() -> None:
                 if context_type == 'system_event_push_notify':
                     return 'bot send', 200
                 
-                logger.warning("recv unknown type:" + context_type)
+                global_logger.warning("recv unknown type:" + context_type)
                 return 'failed', 500
 
             file = request.files['content']
             pic_name = file.filename
-            logger.info("recv file:" + pic_name)
+            global_logger.info("recv file:" + pic_name)
             return 'ok', 200
 
         # 文本部分
@@ -94,9 +94,8 @@ def download(filename):
 
 
 # 发送消息
-@global_logger.logger_wrapper
+@global_logUtil.logger_wrapper
 def send_mc_group_msg(content: str, data_type: str = "text"):
-    global token, logger
     url = f"http://wxBotWebhook:3001/webhook/msg/v2?token={token}"
 
     payload = {
@@ -119,13 +118,12 @@ def send_mc_group_msg(content: str, data_type: str = "text"):
     }
 
     response = requests.request("POST", url, headers=headers, data=payload)
-    logger.info(response.text)
+    global_logger.info(response.text)
 
 
 # 发送给自己消息
-@global_logger.logger_wrapper
+@global_logUtil.logger_wrapper
 def send_test_msg(content: str, data_type: str = "text"):
-    global token, logger
     url = f"http://wxBotWebhook:3001/webhook/msg/v2?token={token}"
 
     payload = {
@@ -148,13 +146,13 @@ def send_test_msg(content: str, data_type: str = "text"):
     }
 
     response = requests.request("POST", url, headers=headers, data=payload)
-    logger.info(response.text)
+    global_logger.info(response.text)
 
 
 # 处理群聊接收的消息，生成回复
-@global_logger.logger_wrapper
+@global_logUtil.logger_wrapper
 def process_group_recv_msg(name: str, context: str) -> str:
-    global logger, history_context
+    global history_context
     sendmsg = ''
 
     # 迎新助手
@@ -166,11 +164,11 @@ def process_group_recv_msg(name: str, context: str) -> str:
     if context[0] == '/':
 
         if context == '/mcs':
-            logger.info('发送服务器状态')
+            global_logger.info('发送服务器状态')
             sendmsg = checkMCServer(logger=logger)
 
         elif context == '/live':
-            logger.info('发送直播状态')
+            global_logger.info('发送直播状态')
             status = getLiveStatus(arg_roomid=31149017)
             sendmsg += f'深圳技术大学Minecraft社直播间：\n直播状态：{status}\n直播间地址：https://live.bilibili.com/31149017'
 
@@ -203,12 +201,12 @@ def process_group_recv_msg(name: str, context: str) -> str:
             # 查询已有的命令
             try:
                 with open('cmd' + context + '.txt', mode='r', encoding='utf-8') as f:
-                    logger.info("load cmd:" + context)
+                    global_logger.info("load cmd:" + context)
                     sendmsg = f.read()
-                    logger.info("have load msg:\n" + sendmsg)
+                    global_logger.info("have load msg:\n" + sendmsg)
 
             except FileNotFoundError:
-                logger.error(f'未知命令: {context}')
+                global_logger.error(f'未知命令: {context}')
                 sendmsg = '未知命令'
 
     #todo: 提示词优化，记忆优化，请求GPT
@@ -227,10 +225,10 @@ def process_group_recv_msg(name: str, context: str) -> str:
 
     # 发送查询结果
     if sendmsg:
-        logger.info("sendmsg:\n"+sendmsg)
+        global_logger.info("sendmsg:\n"+sendmsg)
         if context != '/help':
             sendmsg += help_msg
         else:
-            logger.info("help指令")
+            global_logger.info("help指令")
 
     return sendmsg

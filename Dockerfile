@@ -1,4 +1,4 @@
-FROM python:3.12
+FROM python:3.11.9
 
 WORKDIR /usr/src/myapp/Linux-MCGroupBot
 COPY requirements.txt ./

@@ -3,10 +3,10 @@ import pickle
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
 
-from langchain.embeddings.openai import OpenAIEmbeddings
+from langchain_openai import OpenAIEmbeddings
 from langchain.chains import RetrievalQA
-from langchain.chat_models import ChatOpenAI
-from langchain.vectorstores import Chroma
+from langchain_openai import ChatOpenAI
+from langchain_community.vectorstores import Chroma
 from selenium import webdriver
 from utils.mylog import global_logger
 
