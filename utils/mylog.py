@@ -1,6 +1,8 @@
 import logging
 import time
 import traceback
+import os
+from notice import send_test_msg
 from io import StringIO
 
 class LogUtil:
@@ -52,17 +54,24 @@ class LogUtil:
                 self.logger.info(f'{func.__name__} running... args: {args}, kwargs: {kwargs}')
                 return func(*args, **kwargs)
             except Exception as e:
+                # 重定向到字符串，并且防止重复告警
                 f = StringIO()
                 traceback.print_exc(file=f)
                 traceback_msg = f.getvalue()
                 if self.last_traceback_msg != traceback_msg:
                     self.logger.error(traceback_msg)
                 self.last_traceback_msg = traceback_msg
-                self.logger.error(f'{func.__name__} failed: {e}\n detail traceback_msg:\n{traceback_msg}')
+
+                # 日志和微信通知告警错误
+                summary_msg = time.strftime('%H:%M:%S', time.localtime(time.time())) + '\n'
+                summary_msg += f'{func.__name__} failed: {e}\n detail traceback_msg:\n{traceback_msg}'
+                send_test_msg(summary_msg)
+                self.logger.error(summary_msg)
             
         return wrapper
 
 # workspace: /usr/src/myapp/Linux-MCGroupBot/
+os.path.exists('logs') or os.mkdir('logs')
 global_logUtil = LogUtil(path='logs/')
 global_logger = global_logUtil.getLogger()
 

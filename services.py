@@ -1,7 +1,7 @@
 import json
 import requests
+import config
 from utils.mylog import global_logger, global_logUtil
-from config import *
 from FuncPack.getGPTresponseFunc import getGPTresponse
 from FuncPack.checkMCServerFunc import checkMCServer
 from FuncPack.getBiliLiveStatusFunc import getLiveStatus
@@ -96,39 +96,11 @@ def download(filename):
 # 发送消息
 @global_logUtil.logger_wrapper
 def send_mc_group_msg(content: str, data_type: str = "text"):
-    url = f"http://wxBotWebhook:3001/webhook/msg/v2?token={token}"
+    url = f"http://wxBotWebhook:3001/webhook/msg/v2?token={config.token}"
 
     payload = {
-        "to": GROUP_NAME,
+        "to": config.GROUP_NAME,
         "isRoom": True,
-        "data": {
-            "type": data_type,
-            "content": content
-        }
-    }
-
-    payload = json.dumps(payload)
-
-    headers = {
-        'User-Agent': 'Apifox/1.0.0 (https://apifox.com)',
-        'Content-Type': 'application/json',
-        'Accept': '*/*',
-        'Host': 'wxBotWebhook:3001',
-        'Connection': 'keep-alive'
-    }
-
-    response = requests.request("POST", url, headers=headers, data=payload)
-    global_logger.info(response.text)
-
-
-# 发送给自己消息
-@global_logUtil.logger_wrapper
-def send_test_msg(content: str, data_type: str = "text"):
-    url = f"http://wxBotWebhook:3001/webhook/msg/v2?token={token}"
-
-    payload = {
-        "to": TEST_PERSON,
-        "isRoom": False,
         "data": {
             "type": data_type,
             "content": content
@@ -165,7 +137,7 @@ def process_group_recv_msg(name: str, context: str) -> str:
 
         if context == '/mcs':
             global_logger.info('发送服务器状态')
-            sendmsg = checkMCServer(logger=logger)
+            sendmsg = checkMCServer(logger=global_logger)
 
         elif context == '/live':
             global_logger.info('发送直播状态')
@@ -189,7 +161,7 @@ def process_group_recv_msg(name: str, context: str) -> str:
         elif context[:6] == '/agent':
             if len(context) > 7:
                 send_mc_group_msg('正在查询与整理中，思考完成前不会有响应')
-                result = qa({"query": context[7:]})
+                result = config.qa({"query": context[7:]})
                 localMsg = result['result'] + '\n'
                 for index, source in enumerate(result['source_documents']):
                     localMsg += (f'\n来源{index + 1}:' + source.dict()['metadata']['source'])
@@ -216,7 +188,7 @@ def process_group_recv_msg(name: str, context: str) -> str:
             send_mc_group_msg('正在思考中，回复完成前不会有响应')
             new_msg = f'玩家{asker}说:' + context[5:] + '\n回复简短，限制在100字以内'
             history_context = getGPTresponse(
-                base_url=OPENAI_API_BASE,
+                base_url=config.OPENAI_API_BASE,
                 history_context=history_context, 
                 new_message=new_msg
             )
@@ -227,7 +199,7 @@ def process_group_recv_msg(name: str, context: str) -> str:
     if sendmsg:
         global_logger.info("sendmsg:\n"+sendmsg)
         if context != '/help':
-            sendmsg += help_msg
+            sendmsg += config.help_msg
         else:
             global_logger.info("help指令")
 

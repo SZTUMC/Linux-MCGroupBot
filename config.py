@@ -1,5 +1,6 @@
 import os
 import pickle
+import time
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
 
@@ -51,8 +52,6 @@ try:
     with open('historyGPT.data', mode='rb') as f:
         history_context = pickle.load(f)
 except FileNotFoundError as e:
-    global_logger.info('GPT history not found, will create new data')
+    global_logger.warning('GPT history not found, will create new data')
     
-
-traceback_msg = ''
-last_traceback_msg = 'none'
+LANUCH_TIME = time.strftime('%Y-%m-%d %a %H:%M:%S', time.localtime(time.time()))

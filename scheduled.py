@@ -1,20 +1,16 @@
 import time
-import traceback
 import datetime
-
-from io import StringIO
+import services
+import config
 
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
-from utils.mylog import global_logger
+from utils.mylog import global_logger, global_logUtil
 
 from FuncPack.checkMCServerFunc import checkMCServer
 from FuncPack.getBiliLiveStatusFunc import getLiveStatus
-
-from services import *
-from config import *
 
 
 # refact: 这个类太屎山，等待重构优化
@@ -27,6 +23,7 @@ class ScheduledArea:
         self.tick = 0
         self.last_tick = 0
         self.count = 0
+
 
     def process_scheduled_msg(self):
         sendmsg = ''
@@ -43,7 +40,7 @@ class ScheduledArea:
                 # 新一天重置logger，生成新的log文件
                 for handler in global_logger.handlers.copy():
                     global_logger.removeHandler(handler)
-                global_logger.rebuild()
+                global_logUtil.rebuild()
 
                 with open('text/tips.txt', mode='r', encoding='utf-8') as f:
                     sendmsg = f.read()
@@ -80,7 +77,7 @@ class ScheduledArea:
                 weekday_index = datetime.datetime.now().weekday()
                 if weekday_index in [i for i in range(5)]:
                     file_url = f"http://botv3:4994/{weekday_index + 1}.jpg"
-                    send_mc_group_msg(file_url, data_type='fileUrl')
+                    services.send_mc_group_msg(file_url, data_type='fileUrl')
                     # send_test_msg(file_url, data_type='fileUrl')
                     self.last_tick = self.tick
                     
@@ -93,27 +90,27 @@ class ScheduledArea:
                 
                 def selenium_get():
                     self.count += 1
-                    browser.get("https://space.bilibili.com/1377901474/dynamic")
+                    config.browser.get("https://space.bilibili.com/1377901474/dynamic")
                     time.sleep(3)
                     global_logger.info(f'browser.get:{self.count}')
                     try:
-                        element = WebDriverWait(browser, 10).until(
+                        element = WebDriverWait(config.browser, 10).until(
                             EC.presence_of_element_located((By.XPATH, '//*[@id="page-dynamic"]/div[1]/div/div[1]/div[2]/div/div/div[3]/div/div/div/div/div[1]/div/div/span[2]'))
                         )
 
                         newMsg = element.text
                         newMsg += '\n--转自东南大学Minecraft社B站动态'
-                        newMsg += help_msg
-                        send_mc_group_msg(newMsg)
+                        newMsg += config.help_msg
+                        services.send_mc_group_msg(newMsg)
 
-                        img_element = WebDriverWait(browser, 10).until(
+                        img_element = WebDriverWait(config.browser, 10).until(
                             EC.presence_of_element_located((By.XPATH, '//*[@id="page-dynamic"]/div[1]/div/div[1]/div[2]/div/div/div[3]/div/div/div/div/div[2]/div/div[1]/div/div/picture/img'))
                         )
 
                         file_url = img_element.get_attribute("src")
                         file_url = file_url[:file_url.rfind('@')]
 
-                        send_mc_group_msg(file_url, data_type='fileUrl')
+                        services.send_mc_group_msg(file_url, data_type='fileUrl')
                         
                     except:
 
@@ -126,7 +123,7 @@ class ScheduledArea:
             
         # 如果有消息，发送消息
         if sendmsg:
-            send_mc_group_msg(sendmsg)
+            services.send_mc_group_msg(sendmsg)
 
 
     def scheduled_loop(self):
