@@ -9,6 +9,8 @@ class LogUtil:
     
     def __init__(self, path, log_level = logging.DEBUG) -> None: 
         self._init_logger(path, log_level)
+        self.path = path
+        self.log_level = log_level
         self.last_traceback_msg = ''
 
 
@@ -31,7 +33,7 @@ class LogUtil:
 
 
     def rebuild(self):
-        self._init_logger()
+        self._init_logger(self.path, self.log_level)
 
 
     def getLogger(self):

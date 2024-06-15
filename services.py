@@ -124,7 +124,7 @@ def send_mc_group_msg(content: str, data_type: str = "text"):
 # 处理群聊接收的消息，生成回复
 @global_logUtil.logger_wrapper
 def process_group_recv_msg(name: str, context: str) -> str:
-    global history_context
+    history_context = config.history_context
     sendmsg = ''
 
     # 迎新助手
