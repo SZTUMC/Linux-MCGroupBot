@@ -38,23 +38,15 @@ def get_recv_msg() -> None:
 
         source_dict = json.loads(source)
 
+        name = source_dict["from"]["payload"]["name"]
+        reply = process_group_recv_msg(name, content)
+
         # 在群聊中
         if source_dict['room']:
-            name = source_dict["from"]["payload"]["name"]
+            
             roomName = source_dict["room"]["payload"]["topic"]
             isMentioned = form.get('isMentioned')
             global_logger.info(f'{name} in room {roomName} say: "{content}"')
-            reply = process_group_recv_msg(name, content)
-
-            global_logger.info(f'content:\n"{content}"\nreply:\n"{reply}"')
-
-            response_data = {
-                "success": True,
-                "data": {
-                    'type': 'text',
-                    'content': reply
-                }
-            }
 
             if isMentioned == "1":
                 global_logger.info(name + "@me")
@@ -63,18 +55,21 @@ def get_recv_msg() -> None:
 
         # 私信部分
         if source_dict['to']:
-            name = source_dict["from"]["payload"]["name"]
-            response_data = {
-                "success": True,
-                "data": {
-                    'type': 'text',
-                    'content': '@me!'
-                }
-            }
             global_logger.info(f'{name} send to you: "{content}"')
-            return response_data
+            if name != config.TEST_PERSON:
+                reply = "未认证管理员白名单，请联系管理员添加"
+        
+        global_logger.info(f'content:\n"{content}"\nreply:\n"{reply}"')
 
-        return 'error', 400
+        response_data = {
+            "success": True,
+            "data": {
+                'type': 'text',
+                'content': reply
+            }
+        }
+
+        return response_data
 
     except Exception as e:
         global_logger.error('get_recv_msg error', e)

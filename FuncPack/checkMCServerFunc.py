@@ -37,8 +37,6 @@ def checkMCServer(logger: logging.Logger) -> str:
         server = JavaServer.lookup(url)
 
         try:
-            sendmsg += '\n' # 分隔空行
-
             title = server.query().motd.raw
             version = server.query().software.version
             names = server.query().players.names
@@ -63,13 +61,16 @@ def checkMCServer(logger: logging.Logger) -> str:
                 )
             except:
                 have_offline_server = True
-                sendmsg_behind += f"""
+
+                # 起始已包含一个回车
+                sendmsg_behind += \
+f"""
 - 上次服务器标题：{server_json['motd']}
 - 公网地址: {url}"""
                 if server_json['public_url'].endswith("sztumc.cn"):
                     sendmsg_behind += f"\n- 内网(校园网): {private_ip}:{server_json['port']}"
                 
-                sendmsg_behind += "\n\n"
+                sendmsg_behind += "\n"
         except:
             
             traceback.print_exc()
@@ -89,10 +90,4 @@ def getImportantNotice():
 5.如无特殊情况，节假日出新周目，可以提前推荐新包，以便安排排期
 ---- 更新于 2024年5月29日 by Mick4994
 """
-# def statistics_data_record():
-#     try:
-#         with open('server_statistics.data', mode='rb') as f:
-#             history_context = pickle.load(f)
-#     except FileNotFoundError as e:
-#         logger.info('GPT history not found, will create new data')
-#     with open(file='server_statistics.data', mode='wb') as f:
+
