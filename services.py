@@ -1,6 +1,7 @@
 import json
 import requests
 import config
+import notice
 from utils.mylog import global_logger, global_logUtil
 from FuncPack.getGPTresponseFunc import getGPTresponse
 from FuncPack.checkMCServerFunc import checkMCServer, getImportantNotice
@@ -39,10 +40,11 @@ def get_recv_msg() -> None:
         source_dict = json.loads(source)
 
         name = source_dict["from"]["payload"]["name"]
-        reply = process_group_recv_msg(name, content)
+        is_in_room = True if source_dict['room'] else False
+        reply = process_group_recv_msg(name, content, is_in_room)
 
         # 在群聊中
-        if source_dict['room']:
+        if is_in_room:
             
             roomName = source_dict["room"]["payload"]["topic"]
             isMentioned = form.get('isMentioned')
@@ -54,7 +56,7 @@ def get_recv_msg() -> None:
             return response_data
 
         # 私信部分
-        if source_dict['to']:
+        else:
             global_logger.info(f'{name} send to you: "{content}"')
             if name != config.TEST_PERSON:
                 reply = "未认证管理员白名单，请联系管理员添加"
@@ -118,7 +120,7 @@ def send_mc_group_msg(content: str, data_type: str = "text"):
 
 # 处理群聊接收的消息，生成回复
 @global_logUtil.logger_wrapper
-def process_group_recv_msg(name: str, context: str) -> str:
+def process_group_recv_msg(name: str, context: str, is_in_room:bool) -> str:
     history_context = config.history_context
     sendmsg = ''
 
@@ -132,7 +134,10 @@ def process_group_recv_msg(name: str, context: str) -> str:
 
         if context == '/mcs':
             global_logger.info('发送服务器状态')
-            send_mc_group_msg(checkMCServer(logger=global_logger))
+            if is_in_room:
+                send_mc_group_msg(checkMCServer(logger=global_logger))
+            else:
+                notice.send_test_msg(checkMCServer(logger=global_logger))
             sendmsg = getImportantNotice()
 
         elif context == '/live':

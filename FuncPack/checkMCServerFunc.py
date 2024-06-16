@@ -23,10 +23,11 @@ def checkMCServer(logger: logging.Logger) -> str:
 
     :return sendmsg获取的结果格式化文本
     """
-    sendmsg = '''
-幽匿感测体服务器小助手：
+    sendmsg = \
+'''幽匿感测体服务器小助手：
 
-检测到在线服务器：'''
+检测到在线服务器：
+'''
     sendmsg_behind = '\n离线服务器:'
     have_offline_server = False
 
