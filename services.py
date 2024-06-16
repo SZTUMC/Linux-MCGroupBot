@@ -3,7 +3,7 @@ import requests
 import config
 from utils.mylog import global_logger, global_logUtil
 from FuncPack.getGPTresponseFunc import getGPTresponse
-from FuncPack.checkMCServerFunc import checkMCServer
+from FuncPack.checkMCServerFunc import checkMCServer, getImportantNotice
 from FuncPack.getBiliLiveStatusFunc import getLiveStatus
 from FuncPack.getHypPlayerInfo import get_hyp_player_info
 from flask import Flask, request, jsonify, send_from_directory
@@ -137,7 +137,8 @@ def process_group_recv_msg(name: str, context: str) -> str:
 
         if context == '/mcs':
             global_logger.info('发送服务器状态')
-            sendmsg = checkMCServer(logger=global_logger)
+            send_mc_group_msg(checkMCServer(logger=global_logger))
+            sendmsg = getImportantNotice()
 
         elif context == '/live':
             global_logger.info('发送直播状态')

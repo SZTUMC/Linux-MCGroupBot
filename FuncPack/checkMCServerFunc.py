@@ -36,9 +36,9 @@ def checkMCServer(logger: logging.Logger) -> str:
 
         server = JavaServer.lookup(url)
 
-        sendmsg += '\n'
-
         try:
+            sendmsg += '\n' # 分隔空行
+
             title = server.query().motd.raw
             version = server.query().software.version
             names = server.query().players.names
@@ -54,7 +54,7 @@ def checkMCServer(logger: logging.Logger) -> str:
                 for name in names:
                     sendmsg += f'\n    {name}'
 
-            sendmsg += '\n'
+            sendmsg += '\n' # 分隔空行
 
         except TimeoutError as timeout_error:
             try:
@@ -68,6 +68,8 @@ def checkMCServer(logger: logging.Logger) -> str:
 - 公网地址: {url}"""
                 if server_json['public_url'].endswith("sztumc.cn"):
                     sendmsg_behind += f"\n- 内网(校园网): {private_ip}:{server_json['port']}"
+                
+                sendmsg_behind += "\n\n"
         except:
             
             traceback.print_exc()
@@ -75,17 +77,18 @@ def checkMCServer(logger: logging.Logger) -> str:
     if have_offline_server:
         sendmsg += sendmsg_behind
 
-    sendmsg += """
-重要提示：
+    return sendmsg[:-1]
+
+
+def getImportantNotice():
+    return """重要提示：
 1.有学校内网优先连内网ip，是公网速率的20倍（200M，1ms以内延时），在外请连公网ip
 2.高速跑图吃带宽，公网延迟暴增多是因为有人鞘翅或航海跑图，所以跑图尽量一起
 3.经数据统计周目包平均存活时间为两周，看到在线人数为0的多数是过了这个期限，反之则是新出的
 4.有标注ipv6支持的可以开手机流量然后热点连接，三大运营商基本支持ipv6，校园网暂不公开ipv6
 5.如无特殊情况，节假日出新周目，可以提前推荐新包，以便安排排期
----- 更新于 2024年5月29日 by Mick4994"""
-
-    return sendmsg[:-1]
-
+---- 更新于 2024年5月29日 by Mick4994
+"""
 # def statistics_data_record():
 #     try:
 #         with open('server_statistics.data', mode='rb') as f:
