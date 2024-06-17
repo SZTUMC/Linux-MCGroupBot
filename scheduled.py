@@ -76,7 +76,7 @@ class ScheduledArea:
             if hour == '09' and min == '00' and sec == '00':
                 weekday_index = datetime.datetime.now().weekday()
                 if weekday_index in [i for i in range(5)]:
-                    file_url = f"http://botv3:4994/{weekday_index + 1}.jpg"
+                    file_url = f"http://botv4:4994/{weekday_index + 1}.jpg"
                     services.send_mc_group_msg(file_url, data_type='fileUrl')
                     # send_test_msg(file_url, data_type='fileUrl')
                     self.last_tick = self.tick

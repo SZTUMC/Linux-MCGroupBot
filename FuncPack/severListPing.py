@@ -65,10 +65,11 @@ def generate_server(logger: logging.Logger, server_config, trans=0):
     #     raise Exception("服务器离线")
     
     except Exception as e:
-        f = StringIO()
-        traceback.print_exc(file=f)
-        traceback_msg = f.getvalue()
-        logger.error(traceback_msg)
+        logger.error(f'{__file__}:{e}')
+        # f = StringIO()
+        # traceback.print_exc(file=f)
+        # traceback_msg = f.getvalue()
+        # logger.error(traceback_msg)
     
     try:
         if data and data["players"]["online"] is not None:

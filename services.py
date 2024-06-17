@@ -52,8 +52,6 @@ def get_recv_msg() -> None:
 
             if isMentioned == "1":
                 global_logger.info(name + "@me")
-            
-            return response_data
 
         # 私信部分
         else:
