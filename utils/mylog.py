@@ -50,27 +50,30 @@ class LogUtil:
         self.logger.info(str_info)
 
 
-    def logger_wrapper(self, func):
-        def wrapper(*args, **kwargs):
-            try:
-                self.logger.info(f'{func.__name__} running... args: {args}, kwargs: {kwargs}')
-                return func(*args, **kwargs)
-            except Exception as e:
-                # 重定向到字符串，并且防止重复告警
-                f = StringIO()
-                traceback.print_exc(file=f)
-                traceback_msg = f.getvalue()
-                if self.last_traceback_msg != traceback_msg:
-                    self.logger.error(traceback_msg)
-                self.last_traceback_msg = traceback_msg
+    def logger_wrapper(self, open_INFO = True):
+        def logger_wrapper_no_parameter(func):
+            def wrapper(*args, **kwargs):
+                try:
+                    if open_INFO:
+                        self.logger.info(f'{func.__name__} running... args: {args}, kwargs: {kwargs}')
+                    return func(*args, **kwargs)
+                except Exception as e:
+                    # 重定向到字符串，并且防止重复告警
+                    f = StringIO()
+                    traceback.print_exc(file=f)
+                    traceback_msg = f.getvalue()
+                    if self.last_traceback_msg != traceback_msg:
+                        self.logger.error(traceback_msg)
+                    self.last_traceback_msg = traceback_msg
 
-                # 日志和微信通知告警错误
-                summary_msg = time.strftime('%H:%M:%S', time.localtime(time.time())) + '\n'
-                summary_msg += f'{func.__name__} failed: {e}\n detail traceback_msg:\n{traceback_msg}'
-                send_test_msg(summary_msg)
-                self.logger.error(summary_msg)
-            
-        return wrapper
+                    # 日志和微信通知告警错误
+                    summary_msg = time.strftime('%H:%M:%S', time.localtime(time.time())) + '\n'
+                    summary_msg += f'{func.__name__} failed: {e}\n detail traceback_msg:\n{traceback_msg}'
+                    send_test_msg(summary_msg)
+                    self.logger.error(summary_msg)
+                
+            return wrapper
+        return logger_wrapper_no_parameter
 
 # workspace: /usr/src/myapp/Linux-MCGroupBot/
 os.path.exists('logs') or os.mkdir('logs')

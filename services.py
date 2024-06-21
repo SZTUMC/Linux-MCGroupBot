@@ -72,7 +72,7 @@ def get_recv_msg() -> None:
         return response_data
 
     except Exception as e:
-        global_logger.error('get_recv_msg error', e)
+        global_logger.error(f'get_recv_msg error:\n{e}')
         # 处理异常情况
         response_data = {
             "success": False,

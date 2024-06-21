@@ -25,6 +25,7 @@ class ScheduledArea:
         self.count = 0
 
 
+    @global_logUtil.logger_wrapper(open_INFO=False)
     def process_scheduled_msg(self):
         sendmsg = ''
         hour, min, sec = time.strftime('%H %M %S', time.localtime(time.time())).split(' ')
