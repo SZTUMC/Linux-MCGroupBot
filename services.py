@@ -89,7 +89,7 @@ def download(filename):
 
 
 # 发送消息
-@global_logUtil.logger_wrapper
+@global_logUtil.logger_wrapper(open_INFO=True)
 def send_mc_group_msg(content: str, data_type: str = "text"):
     url = f"http://wxBotWebhook:3001/webhook/msg/v2?token={config.token}"
 
@@ -117,7 +117,7 @@ def send_mc_group_msg(content: str, data_type: str = "text"):
 
 
 # 处理群聊接收的消息，生成回复
-@global_logUtil.logger_wrapper
+@global_logUtil.logger_wrapper(open_INFO=True)
 def process_group_recv_msg(name: str, context: str, is_in_room:bool) -> str:
     history_context = config.history_context
     sendmsg = ''

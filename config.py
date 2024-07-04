@@ -49,7 +49,7 @@ history_context = []
 
 # GPT历史对话数组，持久化
 try:
-    with open('historyGPT.data', mode='rb') as f:
+    with open('LLM_data/historyGPT.data', mode='rb') as f:
         history_context = pickle.load(f)
 except FileNotFoundError as e:
     global_logger.warning('GPT history not found, will create new data')
