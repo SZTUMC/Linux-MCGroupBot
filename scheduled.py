@@ -127,13 +127,12 @@ class ScheduledArea:
             services.send_mc_group_msg(sendmsg)
 
 
-    def scheduled_loop(self):
-        while True:
-            self.process_scheduled_msg()
+    def scheduled_run(self):
+        self.process_scheduled_msg()
 
-            time.sleep(0.1)
-            self.tick += 1
-            if self.tick % 360 == 0:
-                global_logger.info('scheduled_loop still running')
+        time.sleep(0.1)
+        self.tick += 1
+        if self.tick % 360 == 0:
+            global_logger.info('scheduled_loop still running')
 
 

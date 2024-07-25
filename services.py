@@ -10,6 +10,7 @@ from FuncPack.getHypPlayerInfo import get_hyp_player_info
 from flask import Flask, request, jsonify, send_from_directory
 
 app = Flask(__name__)
+global_msgpkg = []
 
 # api接收消息的回调函数
 @app.route('/api/recv', methods=['POST'])
@@ -41,6 +42,9 @@ def get_recv_msg() -> None:
 
         name = source_dict["from"]["payload"]["name"]
         is_in_room = True if source_dict['room'] else False
+
+        global_msgpkg.append([name, content, is_in_room])
+
         reply = process_group_recv_msg(name, content, is_in_room)
 
         # 在群聊中
